@@ -13,8 +13,8 @@ document.addEventListener("DOMContentLoaded", init);
 function init() {
   //Main object to manipulate the storage (Cache API in this case)
   const storage = {
-    instance: caches.open("picture-this-3e46R"),
-    getAll: async function () {
+    instance: caches.open("picture-this-3e46R"), //instance of cache in order not to write this again and again every time we need it
+    getAll: async function () { //returns array of all saved images + alt texts
       return (await this.instance)
         .keys()
         .then(async (keys) => {
@@ -40,13 +40,13 @@ function init() {
           return [];
         });
     },
-    findOne: async function (url) {
+    findOne: async function (url) { //checks if images was already saved
       return (await this.instance)
         .match(url)
         .then((result) => (result ? true : false))
         .catch((err) => false);
     },
-    addOne: function (url, alt) {
+    addOne: function (url, alt) { //adds one image to the cache (stored as JSON object to be able to use ALT text later)
       this.instance
         .then(async (cache) => {
           const data = {
@@ -67,7 +67,7 @@ function init() {
           console.log(err.message);
         });
     },
-    removeOne: function (url) {
+    removeOne: function (url) { //removes one specific image from the cache
       this.instance
         .then(async (cache) => {
           await cache.delete(new URL(url));
@@ -92,7 +92,7 @@ function init() {
     results: document.getElementById("results"),
     menu: document.querySelector("header .menu"),
     isLoading: false,
-    error: function (msg, code = 404) {
+    error: function (msg, code = 404) { //shows dialogs with prepared "error" markup
       if (msg === "") {
         msg = "An unknown error occured 😥";
       }
@@ -116,7 +116,7 @@ function init() {
 
       this.saveState();
     },
-    modal: async function (content) {
+    modal: async function (content) { //shows general dialogs with images and action buttons
       this.setIsLoading(true);
       const body = this.dialog.querySelector(".body");
       body.innerHTML = content;
@@ -134,7 +134,7 @@ function init() {
       this.dialog.querySelector(".control-buttons").classList.remove("hidden");
       this.dialog.showModal();
 
-      if (getPage() === "saved") {
+      if (getPage() === "saved") { //running face recognition if dialog called on a "saved" page
         const img = body.querySelector("img");
         const oldSrc = img.src;
         const blob = await fetchImage(oldSrc);
@@ -199,7 +199,7 @@ function init() {
     clearInput: function () {
       search.querySelector("input").value = "";
     },
-    setIsLoading: function (state = true) {
+    setIsLoading: function (state = true) { //shows loading spinner while fetching data
       if (state) {
         this.loader.style.display = "block";
         this.search.querySelector("button").disabled = true;
@@ -210,7 +210,7 @@ function init() {
         this.isLoading = false;
       }
     },
-    drawResults: function (data) {
+    drawResults: function (data) { //universal function that draws all the images to the page (both for saved and serach)
       this.images.innerHTML = "";
 
       if (data) {
@@ -227,7 +227,7 @@ function init() {
         }
       }
     },
-    saveState: function (url) {
+    saveState: function (url) { //add new entry to the history array
       let data = {
         results: this.results.innerText,
         images: [],
@@ -248,7 +248,7 @@ function init() {
 
       history.pushState(data, "", url ? url : location.href);
     },
-    resultsCounter: function (text = "", append = false) {
+    resultsCounter: function (text = "", append = false) { //sets text to the paragraph located between the searching form and results
       this.clearInput();
 
       if (text === "") {
@@ -268,8 +268,16 @@ function init() {
 
   showPage();
   addEventListeners();
+  autoSearch();
+
+  function autoSearch(){
+    if(getPage() !== "home") return;
+
+    console.log(location)
+  }
 
   function addEventListeners() {
+    //runs seatch when form is submitted
     UI.search.addEventListener("submit", (e) => {
       e.preventDefault();
 
@@ -282,6 +290,7 @@ function init() {
       return runSearch(search);
     });
 
+    //listens to all the clicks inside of the dialog and calls corresponding functions
     UI.dialog.addEventListener("click", (e) => {
       if (e.target.classList.contains("close-dialog")) {
         e.currentTarget
@@ -309,8 +318,10 @@ function init() {
       }
     });
 
+    //shows dialog with a full image when user clicks on a preview card
     UI.images.addEventListener("click", expandImage);
 
+    //intercepts clicks in the header in order to show corresponding page (like SPA, withour reloading of the page)
     UI.menu.addEventListener("click", (e) => {
       e.preventDefault();
 
@@ -320,6 +331,7 @@ function init() {
       }
     });
 
+    //shows corresponding content once user triggers history arrows
     window.addEventListener("popstate", (e) => {
       showPage();
     });
@@ -516,6 +528,7 @@ function init() {
 
     if (url.length === 0) {
       page = "home";
+      UI.saveState("/?page=home");
     } else {
       url = url.substring(1, url.length);
       url = url.split("&");
