@@ -17,7 +17,24 @@ function init() {
     getAll: async function () {
       return (await this.instance)
         .keys()
-        .then((keys) => keys)
+        .then(async (keys) => {
+          const promises = [];
+          keys.forEach((item) => {
+            promises.push(caches.match(item).then((r) => r.json()));
+          });
+
+          return Promise.allSettled(promises).then((data) => {
+            const results = [];
+
+            data.forEach((item) => {
+              if (item.status === "fulfilled") {
+                results.push(item.value);
+              }
+            });
+
+            return results;
+          });
+        })
         .catch((err) => {
           console.log(err);
           return [];
@@ -29,10 +46,21 @@ function init() {
         .then((result) => (result ? true : false))
         .catch((err) => false);
     },
-    addOne: function (url) {
+    addOne: function (url, alt) {
       this.instance
         .then(async (cache) => {
-          cache.add(new URL(url));
+          const data = {
+            alt,
+            url,
+          };
+
+          const jsonResponse = new Response(JSON.stringify(data), {
+            headers: {
+              "content-type": "application/json",
+            },
+          });
+
+          cache.put(url, jsonResponse);
         })
         .catch((err) => {
           UI.error(err.message, err.code);
@@ -123,8 +151,6 @@ function init() {
             },
           });
           const faceDetectorResult = facedetector.detect(img);
-
-          console.log(faceDetectorResult);
 
           const xRation = img.offsetWidth / img.naturalWidth; //Used in case if screen size is smaller than actual image size
           const yRation = img.offsetHeight / img.naturalHeight; //Used in case if screen size is smaller than actual image size
@@ -264,7 +290,11 @@ function init() {
         e.currentTarget.close();
       } else if (e.target.classList.contains("control-button")) {
         if (e.target.classList.contains("save")) {
-          storage.addOne(e.currentTarget.querySelector("img").src);
+          storage.addOne(
+            e.currentTarget.querySelector("img").src,
+            e.currentTarget.querySelector("img").alt,
+            null
+          );
           UI.dialog.querySelector(".control-buttons").classList.remove("save");
           UI.dialog.querySelector(".control-buttons").classList.add("remove");
         }
@@ -462,7 +492,7 @@ function init() {
             return {
               url: item.url,
               author: null,
-              alt: "Saved image",
+              alt: item.alt,
             };
           })
         );
