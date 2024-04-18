@@ -415,7 +415,13 @@ function init() {
         UI.drawResults(df);
 
         let newLocation = location.search;
-        newLocation = newLocation.replace(`&search=${getSearchTerm()}`, `&search=${search}`);
+        if(getSearchTerm()){
+          newLocation = newLocation.replace(`&search=${getSearchTerm()}`, `&search=${search}`);
+        }
+        else{
+          newLocation = `${newLocation}&search=${search}`;
+        }
+        
 
         UI.saveState(`/${newLocation}`);
       })
