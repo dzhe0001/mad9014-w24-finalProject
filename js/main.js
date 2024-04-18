@@ -413,7 +413,11 @@ function init() {
           } photos`
         );
         UI.drawResults(df);
-        UI.saveState();
+
+        let newLocation = location.search;
+        newLocation = newLocation.replace(`&search=${getSearchTerm()}`, `&search=${search}`);
+
+        UI.saveState(`/${newLocation}`);
       })
       .catch((err) => {
         UI.error(err.message, err.code);
